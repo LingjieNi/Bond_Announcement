@@ -5,8 +5,6 @@ matplotlib.style.use('ggplot')
 
 import matrix_wise_ajd
 
-# TODO - fix plots
-
 # ---
 # PART # 1 - Simulation
 # simulate data for three factors
@@ -21,7 +19,7 @@ nobs        = 1000
 # number of factors which characterize the instantaneous interest rate
 dim         = 3
 
-# bond maturities
+# bond maturities 1 month, 6 month, 1 year, 3 years, 5 years, 10 years
 tau         = np.array([1/12,6/12,12/12,36/12,60/12,120/12])
 dt          = 1
 
@@ -51,6 +49,7 @@ sigma2      = sigma.dot(sigma.T)
 
 # Initial factor values
 x           = np.zeros([nobs,dim])
+# TODO - verify initial values
 x[0,:]      = np.matrix([0., 0., 0.])
 
 # Simulation
@@ -59,6 +58,7 @@ for t in range(1,nobs):
     x[t, :]     = (x[t-1, :].reshape(dim,1) + K_P.dot(theta_P-x[t-1].reshape(dim,1)) * dt + sigma * error_terms).reshape(1, dim)
 
 plt.figure( figsize = (15,8) )
+plt.title('Factor-Values')
 plt.plot(x[:,0], label='factor 1')
 plt.plot(x[:,1], label='factor 2')
 plt.plot(x[:,2], label='factor 3')
@@ -83,9 +83,10 @@ theta_Q      = np.linalg.inv(K_Q).dot(K_P.dot(theta_P - sigma.dot(lam)))
 # ---
 
 # constant part for interest rate
-rho_0 = .0
+rho_0   = .0187
 # loading of interest rate. In the setting of following
-rho = np.matrix(([0., 0., 1.])).T
+# TODO - verify rho matrix
+rho     = np.matrix(([0., 0., 1.])).T
 
 A   = np.zeros([len(tau),1])
 B   = np.zeros([len(tau),dim])
@@ -102,9 +103,10 @@ for t in range (1, len(tau)):
 prices = np.zeros([nobs,len(tau)])
 for m in range (1, len(tau)):
     for t in range(1,nobs):
-        prices[t, m] = np.exp(A[m].dot(B[m].dot(x[t])))
+        prices[t, m] = np.exp(A[m]-B[m].dot(x[t]))
 
 plt.figure()
+plt.title('Prices')
 plt.plot(prices[:,5], label='10 year')
 plt.plot(prices[:,4], label='5 year')
 plt.plot(prices[:,3], label='3 year')
@@ -118,15 +120,17 @@ plt.show()
 
 # Calculate yields and add measurement error
 y_error = 0.0001
-yields  =  (x[:, 0].reshape(nobs, 1).dot(B[:, 0].reshape(1, len(tau))) + x[:, 1].reshape(nobs, 1).dot(B[:, 1].reshape(1, len(tau))) + x[:, 2].reshape(nobs, 1).dot(B[:, 2].reshape(1, len(tau))) - A.T) / tau + y_error * np.random.normal(0, 1, [nobs, len(tau)])
+yields  =  ((B.dot(x.T) - A) / tau.reshape(len(tau), 1)).T + y_error * np.random.normal(0, 1, [nobs, len(tau)])
 
-plt.figure(1)
-plt.plot(yields[:,5], label='10 year', color='0.00')
-plt.plot(yields[:,4], label='5 year', color='0.20')
-plt.plot(yields[:,3], label='3 year', color='0.40')
-plt.plot(yields[:,2], label='1 year', color='0.60')
-plt.plot(yields[:,1], label='6 month',color='0.80')
-plt.plot(yields[:,0], label='1 month',color='1.00')
+plt.figure()
+plt.title('Yields')
+plt.plot(yields[:,5], label='10 year')
+plt.plot(yields[:,4], label='5 year')
+plt.plot(yields[:,3], label='3 year')
+plt.plot(yields[:,2], label='1 year')
+plt.plot(yields[:,1], label='6 month')
+plt.plot(yields[:,0], label='1 month')
 plt.xlabel("Number of Observations", fontdict=None, labelpad=None)
 plt.xlabel("Yield", fontdict=None, labelpad=None)
 plt.legend(loc='upper left', ncol=7)
+plt.show()
